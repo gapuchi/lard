@@ -21,14 +21,46 @@ pub struct User {
     pub flags: Option<String>,
 }
 
-pub struct HttpClient {
+#[derive(Deserialize)]
+pub struct Gateway {
+    pub url: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConnectionProperties {
+    pub os: String,
+    pub browser: String,
+    pub device: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Identify {
+    pub token: String,
+    pub intents: u64,
+    pub properties: ConnectionProperties,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GatewayEvent<T> {
+    pub op: i16,
+    pub d: T,
+    pub s: Option<i16>,
+    pub t: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct Hello {
+    pub heartbeat_interval: u64,
+}
+
+pub struct DiscordClient {
     client: Client,
     authorization_header: HeaderValue,
 }
 
-impl HttpClient {
-    pub fn new(bot_token: &str) -> Result<HttpClient, InvalidHeaderValue> {
-        Ok(HttpClient {
+impl DiscordClient {
+    pub fn new(bot_token: &str) -> Result<DiscordClient, InvalidHeaderValue> {
+        Ok(DiscordClient {
             client: Client::new(),
             authorization_header: HeaderValue::from_str(&format!("Bot {}", bot_token))?,
         })
@@ -91,8 +123,7 @@ impl HttpClient {
             .await
     }
 
-    pub async fn delete_message(&self, channel_id: &str, message_id: &str) -> Result<Response,
-        Error> {
+    pub async fn delete_message(&self, channel_id: &str, message_id: &str) -> Result<Response, Error> {
         self.client.delete(&format!("{}/channels/{}/messages/{}", BASE_URL, channel_id, message_id))
             .header(AUTHORIZATION, &self.authorization_header)
             .send()
@@ -133,12 +164,21 @@ impl HttpClient {
             .await
     }
 
-    pub async fn get_gateway(&self) -> Result<String, Error> {
+    pub async fn get_gateway(&self) -> Result<Gateway, Error> {
         self.client.get(&format!("{}/gateway", BASE_URL))
+            // .header(AUTHORIZATION, &self.authorization_header)
+            .send()
+            .await?
+            .json::<Gateway>()
+            .await
+    }
+
+    pub async fn get_gateway_bot(&self) -> Result<Gateway, Error> {
+        self.client.get(&format!("{}/gateway/bot", BASE_URL))
             .header(AUTHORIZATION, &self.authorization_header)
             .send()
             .await?
-            .json()
+            .json::<Gateway>()
             .await
     }
 }
