@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 const BASE_URL: &'static str = "https://discord.com/api/v10";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     pub id: String,
     pub channel_id: String,
